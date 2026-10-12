@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Waffles Rank Maker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #12100e;
+    --bg2: #181512;
+    --panel: #1e1a16;
+    --panel2: #272119;
+    --border: #3a3128;
+    --border2: #4b4034;
+    --accent: #f2a93b;
+    --accent2: #ffcf6e;
+    --accent-ink: #2a1a00;
+    --text: #f6ecdc;
+    --muted: #9a8c78;
+    --good: #7bd35a;
+    --pix: 'Silkscreen', 'Space Mono', monospace;
+    --mono: 'Space Mono', ui-monospace, monospace;
+    --sans: 'DM Sans', system-ui, sans-serif;
+  }
+
+  html, body { height: 100%; }
+  body {
+    background:
+      radial-gradient(1200px 500px at 70% -10%, #2b2013 0%, transparent 60%),
+      var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ---------- header ---------- */
+  header.top {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 22px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(#1c1712, #17130f);
+    flex-shrink: 0;
+  }
+  #logo { width: 36px; height: 36px; image-rendering: pixelated; flex-shrink: 0; }
+  .brand h1 {
+    font-family: var(--pix); font-size: 1.15rem; font-weight: 700; letter-spacing: .04em;
+    color: var(--accent2); text-shadow: 2px 2px 0 #5a3a08; line-height: 1;
+  }
+  .brand p { font-size: .72rem; color: var(--muted); margin-top: 4px; }
+  .fmt-tags { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+  .fmt-tag {
+    font-family: var(--pix); font-size: .62rem; padding: 5px 8px; border-radius: 4px;
+    background: var(--panel2); border: 1px solid var(--border); color: var(--muted);
+  }
+
+  /* ---------- layout ---------- */
+  .app { flex: 1; min-height: 0; display: grid; grid-template-columns: 372px 1fr; }
+
+  aside.controls {
+    border-right: 1px solid var(--border);
+    background: var(--bg2);
+    overflow-y: auto;
+    padding: 16px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  main.workspace { overflow-y: auto; padding: 18px 22px 28px; display: flex; flex-direction: column; gap: 18px; }
+
+  aside.controls::-webkit-scrollbar, main.workspace::-webkit-scrollbar { width: 8px; }
+  aside.controls::-webkit-scrollbar-thumb, main.workspace::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* ---------- cards ---------- */
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .card-title {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--pix); font-size: .72rem; letter-spacing: .08em;
+    color: var(--accent2); text-transform: uppercase; margin-bottom: 11px;
+  }
+  .step {
+    width: 18px; height: 18px; border-radius: 4px; background: var(--accent); color: var(--accent-ink);
+    display: inline-flex; align-items: center; justify-content: center; font-size: .66rem; font-weight: 700;
+  }
+  .hint { font-size: .7rem; color: var(--muted); margin-top: 8px; line-height: 1.45; }
+
+  .text-field, .num-field, .select-field {
+    width: 100%; padding: 10px 12px; background: var(--bg); color: var(--text);
+    border: 1px solid var(--border); border-radius: 7px; outline: none;
+    font-family: var(--mono); font-size: .95rem; font-weight: 700;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .text-field { text-transform: uppercase; letter-spacing: .06em; font-size: 1.05rem; }
+  .text-field:focus, .num-field:focus, .select-field:focus { border-color: var(--accent); box-shadow: 0 0 0 3px #f2a93b22; }
+  .num-field { font-size: .8rem; padding: 7px 9px; }
+
+  /* ---------- colour ---------- */
+  .base-row { display: flex; gap: 10px; align-items: stretch; }
+  .base-pick {
+    position: relative; width: 64px; height: 64px; border-radius: 10px; overflow: hidden; flex-shrink: 0;
+    border: 2px solid var(--border2); cursor: pointer;
+  }
+  .base-pick input { position: absolute; inset: -8px; width: 90px; height: 90px; opacity: 0; cursor: pointer; }
+  .base-pick .bp-bg { position: absolute; inset: 0; pointer-events: none; }
+  .base-meta { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+  .base-meta label { font-size: .68rem; color: var(--muted); }
+  .swatches { display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; margin-top: 12px; }
+  .sw { aspect-ratio: 1; border-radius: 5px; cursor: pointer; border: 2px solid transparent; transition: transform .1s; }
+  .sw:hover { transform: scale(1.12); }
+  .sw.active { border-color: #fff; }
+
+  details { margin-top: 12px; }
+  summary {
+    cursor: pointer; font-size: .72rem; color: var(--muted); list-style: none;
+    display: flex; align-items: center; gap: 6px; user-select: none;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: '▸'; color: var(--accent); transition: transform .15s; display: inline-block; }
+  details[open] > summary::before { transform: rotate(90deg); }
+  summary:hover { color: var(--text); }
+  .details-body { padding-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+
+  .color-row { display: flex; align-items: center; gap: 10px; }
+  .color-dot-wrapper {
+    position: relative; width: 28px; height: 28px; border-radius: 50%; overflow: hidden; cursor: pointer;
+    border: 2px solid var(--border2); flex-shrink: 0;
+  }
+  .color-dot-wrapper input { position: absolute; top: -5px; left: -5px; width: 40px; height: 40px; opacity: 0; cursor: pointer; }
+  .color-dot-bg { position: absolute; inset: 0; pointer-events: none; }
+  .color-info { display: flex; flex-direction: column; }
+  .color-name { font-size: .72rem; color: var(--muted); }
+  .color-hex { font-family: var(--mono); font-size: .76rem; }
+
+  .seg { display: flex; gap: 6px; }
+  .seg button {
+    flex: 1; padding: 7px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+    color: var(--muted); font-family: var(--sans); font-size: .74rem; cursor: pointer; transition: all .15s;
+  }
+  .seg button.active { border-color: var(--accent); color: var(--accent2); background: #f2a93b14; }
+  .seg button:hover:not(.active) { border-color: var(--border2); color: var(--text); }
+
+  /* ---------- icons ---------- */
+  .icon-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; max-height: 226px; overflow-y: auto; padding-right: 2px; }
+  .icon-btn {
+    aspect-ratio: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; padding: 0; transition: all .12s;
+  }
+  .icon-btn canvas { width: 24px; height: 24px; image-rendering: pixelated; }
+  .icon-btn.active { border-color: var(--accent); background: #f2a93b18; }
+  .icon-btn:hover:not(.active) { border-color: var(--border2); transform: translateY(-1px); }
+  .none-x { color: var(--muted); font-size: .8rem; font-family: var(--mono); }
+  .icon-grid::-webkit-scrollbar { width: 5px; }
+  .icon-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ---------- presets ---------- */
+  .chip-group-title { font-size: .6rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 10px 0 5px; }
+  .chip-group-title:first-child { margin-top: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chip {
+    font-family: var(--pix); font-size: .58rem; padding: 5px 7px; border: none; border-radius: 3px; color: #fff; cursor: pointer;
+    text-shadow: 1px 1px 0 rgba(0,0,0,.5); outline: 2px solid transparent; transition: transform .1s;
+  }
+  .chip:hover { transform: translateY(-1px); }
+  .chip.active { outline-color: #fff; }
+
+  /* ---------- sliders ---------- */
+  .padding-row { display: flex; align-items: center; gap: 10px; }
+  .padding-label { font-size: .72rem; color: var(--muted); width: 46px; flex-shrink: 0; font-family: var(--mono); }
+  .padding-slider {
+    flex: 1; -webkit-appearance: none; appearance: none; height: 4px; border-radius: 2px; background: var(--border); outline: none; cursor: pointer;
+  }
+  .padding-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px; border-radius: 3px; background: var(--accent); border: 2px solid var(--panel); cursor: pointer;
+  }
+  .padding-slider::-moz-range-thumb { width: 14px; height: 14px; border-radius: 3px; background: var(--accent); border: 2px solid var(--panel); cursor: pointer; }
+  .padding-value { font-family: var(--mono); font-size: .72rem; width: 20px; text-align: right; }
+  .check { display: flex; gap: 8px; align-items: center; font-size: .76rem; color: var(--muted); cursor: pointer; }
+  .check input { accent-color: var(--accent); }
+
+  /* ---------- buttons ---------- */
+  .btn {
+    padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border2); background: var(--panel2); color: var(--text);
+    font-family: var(--pix); font-size: .68rem; letter-spacing: .05em; cursor: pointer; text-transform: uppercase;
+    transition: all .12s; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  }
+  .btn:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); box-shadow: 0 3px 0 #a86c14; }
+  .btn.primary:hover { background: var(--accent2); }
+  .btn.primary:active { box-shadow: 0 1px 0 #a86c14; transform: translateY(2px); }
+  .btn.ghost { background: transparent; }
+  .btn.danger:hover { border-color: #e05050; color: #ff8a8a; }
+  .btn:disabled { opacity: .4; pointer-events: none; }
+
+  /* ---------- stage ---------- */
+  .stage { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 18px; }
+  .stage-view {
+    position: relative; min-height: 250px; border-radius: 10px; border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center; padding: 30px 20px 40px; overflow: hidden;
+    background-color: #17130f;
+    background-image:
+      linear-gradient(45deg, #1d1813 25%, transparent 25%), linear-gradient(-45deg, #1d1813 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #1d1813 75%), linear-gradient(-45deg, transparent 75%, #1d1813 75%);
+    background-size: 20px 20px; background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+  }
+  .stage-tag { position: absolute; top: 10px; left: 12px; font-family: var(--pix); font-size: .6rem; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
+  .size-info {
+    position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); font-family: var(--mono); font-size: .66rem; color: var(--muted);
+    background: var(--panel); border: 1px solid var(--border); border-radius: 4px; padding: 3px 9px; white-space: nowrap;
+  }
+  #badge-canvas { image-rendering: pixelated; image-rendering: crisp-edges; filter: drop-shadow(0 6px 18px #0008); }
+
+  .chat-wrap { display: flex; flex-direction: column; gap: 10px; }
+  .chat {
+    flex: 1; min-height: 190px; background: #000a; border: 1px solid var(--border); border-radius: 10px;
+    background-image: linear-gradient(180deg, #2c3a22, #1a2314);
+    padding: 12px; display: flex; flex-direction: column; justify-content: flex-end; gap: 2px;
+  }
+  .chat-line {
+    display: flex; align-items: center; gap: 6px; padding: 2px 6px; background: #0007;
+    font-family: var(--mono); font-size: .8rem; color: #fff; text-shadow: 1.5px 1.5px 0 #3a3a3a; white-space: nowrap; overflow: hidden;
+  }
+  .chat-line img { image-rendering: pixelated; flex-shrink: 0; }
+  .chat-line .nm { color: #fff; } .chat-line .msg { color: #fff; opacity: .95; }
+  .stage-actions { display: flex; gap: 8px; }
+  .stage-actions .btn { flex: 1; }
+
+  /* ---------- tray ---------- */
+  .tray-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .tray-head .card-title { margin: 0; }
+  .count { font-family: var(--mono); font-size: .7rem; color: var(--accent-ink); background: var(--accent); border-radius: 10px; padding: 1px 8px; font-weight: 700; }
+  .tray-actions { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+  .tray-actions .btn { padding: 7px 10px; font-size: .6rem; }
+  .tray-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px;
+    padding: 10px; border: 1px dashed var(--border2); border-radius: 8px; background: var(--bg); min-height: 90px; align-content: start;
+  }
+  .tray-empty { grid-column: 1 / -1; color: var(--muted); font-size: .78rem; text-align: center; padding: 22px 10px; line-height: 1.6; }
+  .tcard {
+    position: relative; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px 8px 8px;
+    display: flex; flex-direction: column; align-items: center; gap: 7px; cursor: pointer; transition: all .12s;
+  }
+  .tcard:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .tcard img { image-rendering: pixelated; max-width: 100%; }
+  .tcard .tid { font-family: var(--mono); font-size: .6rem; color: var(--muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tcard .x {
+    position: absolute; top: 3px; right: 3px; width: 18px; height: 18px; border-radius: 4px; border: none; background: transparent;
+    color: var(--muted); cursor: pointer; font-size: .8rem; line-height: 1; opacity: 0;
+  }
+  .tcard:hover .x { opacity: 1; }
+  .tcard .x:hover { background: #e0505033; color: #ff8a8a; }
+
+  .export-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px; }
+  .fmt-btn {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 9px; padding: 11px 8px; cursor: pointer; color: var(--muted);
+    display: flex; flex-direction: column; gap: 3px; align-items: center; transition: all .12s; font-family: var(--sans);
+  }
+  .fmt-btn b { font-family: var(--pix); font-size: .8rem; color: var(--text); letter-spacing: .04em; }
+  .fmt-btn span { font-size: .66rem; }
+  .fmt-btn:hover { border-color: var(--border2); }
+  .fmt-btn.active { border-color: var(--accent); background: #f2a93b12; }
+  .fmt-btn.active b { color: var(--accent2); }
+
+  .opts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px; }
+  .opts label { display: flex; flex-direction: column; gap: 4px; font-size: .66rem; color: var(--muted); }
+  .opts-note { grid-column: 1 / -1; }
+  .export-bar { display: flex; align-items: center; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+  .export-bar .btn { padding: 12px 18px; }
+  .path-preview { font-family: var(--mono); font-size: .64rem; color: var(--muted); line-height: 1.6; background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 9px 11px; margin-top: 12px; overflow-x: auto; white-space: pre; }
+
+  #toast {
+    position: fixed; bottom: 22px; left: 50%; transform: translate(-50%, 30px); opacity: 0; pointer-events: none;
+    background: var(--accent); color: var(--accent-ink); font-family: var(--pix); font-size: .7rem; padding: 10px 16px; border-radius: 8px;
+    transition: all .25s; z-index: 50; box-shadow: 0 6px 20px #0008;
+  }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  @media (max-width: 1000px) {
+    body { overflow: auto; }
+    .app { grid-template-columns: 1fr; }
+    aside.controls { border-right: none; border-bottom: 1px solid var(--border); overflow: visible; }
+    main.workspace { overflow: visible; }
+    .stage { grid-template-columns: 1fr; }
+    .opts { grid-template-columns: repeat(2, 1fr); }
+    .fmt-tags { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <canvas id="logo" width="7" height="7"></canvas>
+  <div class="brand">
+    <h1>Waffles Rank Maker</h1>
+    <p>Pixel rank &amp; prefix badges for Minecraft — one color in, full pack out</p>
+  </div>
+  <div class="fmt-tags"><span class="fmt-tag">NEXO</span><span class="fmt-tag">ITEMSADDER</span><span class="fmt-tag">ORAXEN</span></div>
+</header>
+
+<div class="app">
+<aside class="controls">
+
+  <section class="card">
+    <div class="card-title"><span class="step">1</span>Badge text</div>
+    <input type="text" class="text-field" id="text-input" value="OWNER" autocomplete="off" maxlength="24" spellcheck="false">
+  </section>
+
+  <section class="card">
+    <div class="card-title"><span class="step">2</span>Pick one color</div>
+    <div class="base-row">
+      <div class="base-pick">
+        <div class="bp-bg" id="base-bg"></div>
+        <input type="color" id="base-color" value="#d8303f">
+      </div>
+      <div class="base-meta">
+        <label for="base-hex">Base color — everything else is automatic</label>
+        <input type="text" class="num-field" id="base-hex" value="#D8303F" maxlength="7" spellcheck="false">
+      </div>
+    </div>
+    <div class="swatches" id="swatches"></div>
+
+    <details id="fine">
+      <summary>Fine-tune colors manually</summary>
+      <div class="details-body">
+        <div class="color-row"><div class="color-dot-wrapper"><div class="color-dot-bg" id="dot-top-bg"></div><input type="color" id="bg-top" value="#d8303f"></div>
+          <div class="color-info"><span class="color-name">Gradient — start</span><span class="color-hex" id="hex-top"></span></div></div>
+        <div class="color-row"><div class="color-dot-wrapper"><div class="color-dot-bg" id="dot-bot-bg"></div><input type="color" id="bg-bottom" value="#b01a2c"></div>
+          <div class="color-info"><span class="color-name">Gradient — end</span><span class="color-hex" id="hex-bot"></span></div></div>
+        <div class="color-row"><div class="color-dot-wrapper"><div class="color-dot-bg" id="dot-txt-bg"></div><input type="color" id="text-color" value="#ffffff"></div>
+          <div class="color-info"><span class="color-name">Text</span><span class="color-hex" id="hex-txt"></span></div></div>
+        <div class="color-row"><div class="color-dot-wrapper"><div class="color-dot-bg" id="dot-shd-bg"></div><input type="color" id="shadow-color" value="#4a0a14"></div>
+          <div class="color-info"><span class="color-name">Text shadow</span><span class="color-hex" id="hex-shd"></span></div></div>
+        <div class="seg">
+          <button id="dir-tb" class="active" onclick="setDir('top-bottom')">↕ Top → bottom</button>
+          <button id="dir-lr" onclick="setDir('left-right')">↔ Left → right</button>
+        </div>
+        <button class="btn ghost" style="padding:7px" onclick="autoColors()">↺ Re-generate from base</button>
+      </div>
+    </details>
+  </section>
+
+  <section class="card">
+    <div class="card-title"><span class="step">3</span>Icon</div>
+    <div class="icon-grid" id="icon-grid"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-title"><span class="step">4</span>Quick start presets</div>
+    <div id="presets-bar"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-title"><span class="step">5</span>Shape</div>
+    <div style="display:flex;flex-direction:column;gap:9px">
+      <div class="padding-row"><span class="padding-label">Bevel</span><input type="range" class="padding-slider" id="bevel" min="0" max="2" value="1"><span class="padding-value" id="bevel-val">1</span></div>
+      <label class="check"><input type="checkbox" id="corners" checked> Cut corners</label>
+    </div>
+    <details>
+      <summary>Padding</summary>
+      <div class="details-body">
+        <div class="padding-row"><span class="padding-label">Left</span><input type="range" class="padding-slider" id="pad-left" min="1" max="20" value="3"><span class="padding-value" id="pad-left-val">3</span></div>
+        <div class="padding-row"><span class="padding-label">Right</span><input type="range" class="padding-slider" id="pad-right" min="1" max="20" value="3"><span class="padding-value" id="pad-right-val">3</span></div>
+        <div class="padding-row"><span class="padding-label">Top</span><input type="range" class="padding-slider" id="pad-top" min="0" max="10" value="2"><span class="padding-value" id="pad-top-val">2</span></div>
+        <div class="padding-row"><span class="padding-label">Bottom</span><input type="range" class="padding-slider" id="pad-bottom" min="0" max="10" value="2"><span class="padding-value" id="pad-bottom-val">2</span></div>
+        <p class="hint">Keep padding the same across all badges so they line up in chat.</p>
+      </div>
+    </details>
+  </section>
+
+</aside>
+
+<main class="workspace">
+
+  <section class="stage">
+    <div class="stage-view" id="stage-view">
+      <span class="stage-tag">Live preview</span>
+      <canvas id="badge-canvas"></canvas>
+      <span class="size-info" id="size-info">—</span>
+    </div>
+    <div class="chat-wrap">
+      <div class="chat" id="chat"></div>
+      <div class="stage-actions">
+        <button class="btn" id="download-btn">↓ PNG</button>
+        <button class="btn primary" id="add-btn">＋ Add to pack</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="tray-head">
+      <div class="card-title"><span class="step">6</span>Your pack</div>
+      <span class="count" id="count">0</span>
+      <div class="tray-actions">
+        <button class="btn ghost" id="add-all-btn" title="Add every preset using the current shape settings">＋ All presets</button>
+        <button class="btn ghost danger" id="clear-btn">Clear</button>
+      </div>
+    </div>
+    <div class="tray-grid" id="tray"></div>
+
+    <div class="export-grid" id="fmt-grid">
+      <button class="fmt-btn active" data-fmt="nexo"><b>Nexo</b><span>glyphs + pack assets</span></button>
+      <button class="fmt-btn" data-fmt="itemsadder"><b>ItemsAdder</b><span>font_images + textures</span></button>
+      <button class="fmt-btn" data-fmt="oraxen"><b>Oraxen</b><span>glyphs + pack textures</span></button>
+    </div>
+
+    <div class="opts">
+      <label>Namespace<input class="num-field" id="o-ns" value="waffles" spellcheck="false"></label>
+      <label>Texture folder<input class="num-field" id="o-folder" value="ranks" spellcheck="false"></label>
+      <label>ID prefix<input class="num-field" id="o-prefix" value="rank_" spellcheck="false"></label>
+      <label>Config file name<input class="num-field" id="o-file" value="waffles_ranks" spellcheck="false"></label>
+      <label>Height (blank = auto)<input class="num-field" id="o-height" type="number" min="1" max="256" placeholder="auto"></label>
+      <label>Ascent (blank = auto)<input class="num-field" id="o-ascent" type="number" min="0" max="256" placeholder="auto"></label>
+      <label class="check opts-note" style="grid-column: span 2; align-self:end; padding-bottom:6px">
+        <input type="checkbox" id="o-chat"> Let players type <code style="font-family:var(--mono)">:id:</code> in chat
+      </label>
+    </div>
+
+    <div class="path-preview" id="path-preview"></div>
+
+    <div class="export-bar">
+      <button class="btn primary" id="export-btn">↓ Export pack (.zip)</button>
+      <span class="hint" style="margin:0" id="export-hint">Drop the zip's <b>plugins</b> folder into your server.</span>
+    </div>
+  </section>
+
+</main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const fontMap = {
+  'A':['01110','10001','11111','10001','10001'],
+  'B':['11110','10001','11110','10001','11110'],
+  'C':['01110','10001','10000','10001','01110'],
+  'D':['11110','10001','10001','10001','11110'],
+  'E':['1111','1000','1110','1000','1111'],
+  'F':['1111','1000','1110','1000','1000'],
+  'G':['01110','10000','10111','10001','01110'],
+  'H':['10001','10001','11111','10001','10001'],
+  'I':['111','010','010','010','111'],
+  'J':['00111','00001','00001','10001','01110'],
+  'K':['10011','10100','11000','10100','10011'],
+  'L':['1000','1000','1000','1000','1111'],
+  'M':['10001','11011','10101','10001','10001'],
+  'N':['10001','11001','10101','10011','10001'],
+  'O':['01110','10001','10001','10001','01110'],
+  'P':['11110','10001','11110','10000','10000'],
+  'Q':['01110','10001','10001','10011','01111'],
+  'R':['11110','10001','11110','10100','10011'],
+  'S':['01111','10000','01110','00001','11110'],
+  'T':['11111','00100','00100','00100','00100'],
+  'U':['10001','10001','10001','10001','01110'],
+  'V':['10001','10001','10001','01010','00100'],
+  'W':['10001','10001','10101','11011','10001'],
+  'X':['10001','01010','00100','01010','10001'],
+  'Y':['10001','01010','00100','00100','00100'],
+  'Z':['11111','00010','00100','01000','11111'],
+  ' ':['000','000','000','000','000'],
+  '-':['0000','0000','1111','0000','0000'],
+  '_':['00000','00000','00000','00000','11111'],
+  '.':['0','0','0','0','1']
+};
+Object.assign(fontMap, {
+  '0':['01110','10011','10101','11001','01110'], '1':['010','110','010','010','111'],
+  '2':['11110','00001','01110','10000','11111'], '3':['11110','00001','01110','00001','11110'],
+  '4':['10010','10010','11111','00010','00010'], '5':['11111','10000','11110','00001','11110'],
+  '6':['01110','10000','11110','10001','01110'], '7':['11111','00001','00010','00100','00100'],
+  '8':['01110','10001','01110','10001','01110'], '9':['01110','10001','01111','00001','01110'],
+  '+':['000','010','111','010','000'], '!':['1','1','1','0','1'], '?':['01110','00001','00110','00000','00100'],
+  ':':['0','1','0','1','0'], '/':['00001','00010','00100','01000','10000'],
+  '[':['11','10','10','10','11'], ']':['11','01','01','01','11'],
+  '>':['100','010','001','010','100'], '<':['001','010','100','010','001'],
+  '#':['01010','11111','01010','11111','01010'], "'":['1','1','0','0','0'], '*':['000','101','010','101','000']
+});
+
+// ---------- icons (7x7): a = main, b = dark, c = light ----------
+const ICONS = {
+  crown:  ['a.a.a.a','aacacaa','aaaaaaa','aaaaaaa','bbbbbbb','.......','.......'],
+  gem:    ['.cccaa.','caaaaab','aaaaabb','.aaabb.','..abb..','...b...','.......'],
+  star:   ['...c...','...a...','ccaaabb','.aaaab.','..aab..','.aa.bb.','ab...bb'],
+  heart:  ['.aa.aa.','acaaaab','aaaaabb','.aaabb.','..abb..','...b...','.......'],
+  shield: ['aaaaaaa','acaaaab','aaaaabb','aaaaabb','.aaabb.','..abb..','...b...'],
+  bolt:   ['....ca.','...caa.','..caa..','.aaaaa.','...aab.','..ab...','..b....'],
+  key:    ['.aaa...','acaab..','aa.ab..','.abb...','..a....','..aa...','..ab...'],
+  hammer: ['.aaaa..','aaaaab.','aaaab..','..ab...','..ab...','.ab....','.b.....'],
+  coin:   ['.aaaa..','acccaab','acaaaab','acaaaab','aaaaabb','.bbbb..','.......'],
+  gift:   ['.a...a.','..a.a..','ccccccc','aaacaab','aaacaab','aaacaab','bbbcbbb'],
+  play:   ['aaaaaaa','acaabaa','acaaabb','acaaaab','acaabab','aaaaaaa','bbbbbbb'],
+  potion: ['..bbb..','...a...','..aaa..','.acaaab','.aaaabb','.aaabb.','..bbb..'],
+  sword:  ['.....ca','....caa','...caab','.c.ab..','..aab..','..ab...','ab.....'],
+  skull:  ['.ccaaa.','caaaaab','abbabba','aaaaaab','.aaaab.','.ababa.','.......'],
+  flame:  ['...a...','..aa...','..aaa..','.aacaa.','aaaccaa','aaaaaab','.abbbb.'],
+  leaf:   ['....cca','..caaaa','.caaaab','caaaab.','aaab...','ab.b...','b......'],
+  note:   ['...aaaa','...abbb','...a...','...a...','.aaa...','aaaa...','.bb....'],
+  pickaxe:['.aaaa..','a...aa.','....ab.','...ab..','..ab...','.ab....','ab.....'],
+  book:   ['aaaaaa.','acccaab','acaaaab','acccaab','acaaaab','aaaaaab','bbbbbb.'],
+  bell:   ['...a...','..aaa..','.acaaab','.aaaab.','aaaaabb','bbbbbbb','...b...'],
+  bag:    ['..aaa..','...a...','.aaaaa.','acaaaab','aaaaaab','aaaaabb','.bbbbb.'],
+  lock:   ['..aaa..','.a...b.','.a...b.','aaaaaaa','acaaaab','aaabaab','aaaaaab'],
+  clover: ['.aa.aa.','aaaaaab','.aaaab.','aaaaaab','.aa.ab.','...a...','...b...'],
+  trophy: ['aaaaaaa','acaaaab','aaaaabb','.aaabb.','..aab..','..aab..','.bbbbb.'],
+  ghost:  ['.aaaaa.','acaaaab','abbabba','aaaaaab','aaaaaab','aaaaaab','a.a.a.b'],
+  moon:   ['..aaa..','.aaa...','aaa....','aaa....','aaab...','.aaabb.','..bbb..'],
+  sun:    ['a..a..a','.a.a.a.','..aaa..','aacaaab','..aab..','.a.a.b.','a..a..b'],
+  flag:   ['abbbbb.','acaaaa.','acaaab.','acaab..','ab.....','ab.....','bb.....'],
+  paw:    ['aa.a.aa','aa.a.ab','..aaa..','.aaaaab','.aaaaab','.ab.abb','.......'],
+  fish:   ['.......','..aaa.a','.acaaaa','aaaabaa','.aaaaab','..bbb.b','.......'],
+  waffle: ['bbbbbbb','bacacab','bbbbbbb','bacacab','bbbbbbb','bacacab','bbbbbbb'],
+  snow:   ['...a...','.a.a.a.','..aaa..','aaacaaa','..aaa..','.a.a.a.','...a...'],
+  cloud:  ['.......','..aaa..','.aaaaa.','aaaaaab','aaaaabb','.bbbbb.','.......'],
+  chat:   ['aaaaaaa','acccccb','aaaaaab','aaaaaab','aaaaabb','aa.bbbb','a.b....'],
+  pin:    ['.aaaaa.','acaaaab','aabbaab','aaaaaab','.aaabb.','..abb..','...b...'],
+};
+const ICON_ORDER = ['crown','gem','star','heart','shield','bolt','key','hammer','coin','gift','play','potion','sword','skull','flame','leaf','note','pickaxe','book','bell','bag','lock','clover','trophy','ghost','moon','sun','flag','paw','fish','waffle','snow','cloud','chat','pin'];
+
+// ---------- presets: [name, main, dark, shadow, icon, dir?] ----------
+const STAFF=[
+ ['OWNER','#d8303f','#b01a2c','#4a0a14','crown'],['ADMIN','#20bfae','#128a7c','#06403a','shield'],
+ ['MOD','#2f90e6','#1a63b3','#0a2a55','gem'],['DEVELOPER','#8f43d0','#6a2aa3','#2a0f4a','potion'],
+ ['HELPER','#72c83e','#4a9a24','#1d4a0a','book'],['BUILDER','#f78122','#d2590c','#5a2300','hammer']];
+const PLAYER=[
+ ['YOUTUBER','#d62c3c','#a61c2c','#4a0a14','play'],['TWITCH','#8f55d6','#6a36a8','#2a0f4a','chat'],
+ ['VIP','#e6c82c','#b89a14','#4d3d00','gem'],['VIP+','#92da32','#5fa81c','#264a0a','gem'],
+ ['MVP','#30d89e','#1aa876','#08432f','gem'],['MVP+','#30d8d4','#1aa8aa','#08434a','gem'],
+ ['PLAYER','#404b70','#273050','#0d1022','none']];
+const RARITY=[
+ ['COMMON','#60bc3c','#3f8f26','#1a3d0d','none'],['UNCOMMON','#a0e43c','#6fb520','#2d4d08','none'],
+ ['RARE','#3fa0e6','#2270b8','#0b2c55','none'],['EPIC','#e6d42c','#b3a214','#4a4200','none'],
+ ['HEROIC','#f88c24','#d0630e','#5a2800','none'],['LEGENDARY','#ac46ec','#7e26b8','#2e0f55','none'],
+ ['ETHEREAL','#e66474','#3a6fe0','#4a0a1c','none','left-right']];
+const NPC=[
+ ['BATTLEPASS','#bb8f5a','#8f6a3c','#3d2a12','coin'],['ALCHEMIST','#ec3cac','#b8207f','#4d0a35','potion'],
+ ['NPC','#bb8f5a','#8f6a3c','#3d2a12','shield'],['COSMETICS','#c8a0f0','#9a6ad0','#3a1f5a','gem'],
+ ['ENCHANTER','#a444e4','#7a28b8','#2d0f55','star'],['VAULT','#2e92e6','#1a68b8','#0a2a55','lock'],
+ ['TINKERER','#404b70','#273050','#0d1022','hammer'],['MERCHANT','#bb8f5a','#8f6a3c','#3d2a12','bag'],
+ ['REWARDS','#60cc3c','#3f9f26','#1a3d0d','gift'],['AUCTION','#20bfae','#128a7c','#06403a','hammer'],
+ ['TRADER','#8040c0','#5c2c94','#240f40','coin'],['QUEST','#d62c3c','#a61c2c','#4a0a14','flag'],
+ ['BANK','#f88c24','#d0630e','#5a2800','coin'],['JOBS','#2e74d6','#1a52a8','#0a2255','pickaxe'],
+ ['KITS','#30d8d4','#1aa8aa','#08434a','sword'],['SHOP','#60cc3c','#3f9f26','#1a3d0d','bag'],
+ ['WARP','#404b70','#273050','#0d1022','pin'],['EXCHANGE','#3fa0e6','#2270b8','#0b2c55','bolt'],
+ ['KEYSMITH','#30d89e','#1aa876','#08432f','key']];
+const GROUPS=[['Staff',STAFF],['Player',PLAYER],['Rarity',RARITY],['NPC',NPC]];
+const QUICK = ['#d8303f','#f78122','#f2a93b','#e6d42c','#92da32','#30d89e','#30d8d4','#2f90e6','#4a5de0','#8f43d0',
+               '#ec3cac','#e66474','#bb8f5a','#404b70','#9aa3b5','#ffffff','#1fb5a5','#60bc3c','#ac46ec','#222222'];
+
+// ---------- helpers ----------
+const $ = id => document.getElementById(id);
+const WHITE={r:255,g:255,b:255}, BLACK={r:0,g:0,b:0};
+function hexToRgb(h){ const n=parseInt(h.slice(1),16); return {r:(n>>16)&255,g:(n>>8)&255,b:n&255}; }
+function rgbToHex(c){ return '#'+[c.r,c.g,c.b].map(v=>Math.max(0,Math.min(255,v)).toString(16).padStart(2,'0')).join(''); }
+function mix(c,t,k){ return {r:Math.round(c.r+(t.r-c.r)*k),g:Math.round(c.g+(t.g-c.g)*k),b:Math.round(c.b+(t.b-c.b)*k)}; }
+function css(c){ return `rgb(${c.r},${c.g},${c.b})`; }
+function lum(c){ return (0.2126*c.r+0.7152*c.g+0.0722*c.b)/255; }
+function validHex(h){ return /^#[0-9a-fA-F]{6}$/.test(h); }
+
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('show'),2200); }
+
+// one colour -> full palette
+function derive(baseHex){
+  const c=hexToRgb(baseHex);
+  const light = lum(c) > 0.78;
+  return {
+    a: rgbToHex(mix(c,WHITE,0.04)),
+    b: rgbToHex(mix(c,BLACK,0.26)),
+    sc: rgbToHex(light ? mix(c,WHITE,0.45) : mix(c,BLACK,0.78)),
+    tc: light ? '#2b2118' : '#ffffff'
+  };
+}
+
+// ---------- state ----------
+let currentIcon = 'crown';
+let gradDir = 'top-bottom';
+
+function getState(){
+  return {
+    text: $('text-input').value.toUpperCase() || ' ',
+    base: $('base-color').value,
+    a: $('bg-top').value, b: $('bg-bottom').value, tc: $('text-color').value, sc: $('shadow-color').value,
+    icon: currentIcon, dir: gradDir,
+    pl:+$('pad-left').value, pr:+$('pad-right').value, pt:+$('pad-top').value, pb:+$('pad-bottom').value,
+    bevel:+$('bevel').value, corners:$('corners').checked
+  };
+}
+function setState(s){
+  if(s.text!==undefined) $('text-input').value=s.text.trim()===''?'':s.text;
+  if(s.base){ $('base-color').value=s.base; }
+  if(s.a) $('bg-top').value=s.a; if(s.b) $('bg-bottom').value=s.b;
+  if(s.tc) $('text-color').value=s.tc; if(s.sc) $('shadow-color').value=s.sc;
+  if(s.icon) currentIcon=s.icon;
+  if(s.dir) setDir(s.dir,true);
+  const sl={pl:'pad-left',pr:'pad-right',pt:'pad-top',pb:'pad-bottom',bevel:'bevel'};
+  for(const k in sl) if(s[k]!==undefined){ $(sl[k]).value=s[k]; $(sl[k]+'-val').textContent=s[k]; }
+  if(s.corners!==undefined) $('corners').checked=s.corners;
+  syncColorUI(); refresh();
+}
+
+// ---------- rendering ----------
+function paintIcon(c,name,a){
+  const g=c.getContext('2d'); c.width=7; c.height=7; g.clearRect(0,0,7,7);
+  if(name==='none'||!ICONS[name]) return;
+  const A=hexToRgb(a);
+  const map={a:css(A),b:css(mix(A,BLACK,.4)),c:css(mix(A,WHITE,.5))};
+  ICONS[name].forEach((row,y)=>{ for(let x=0;x<7;x++){ const m=map[row[x]]; if(m){ g.fillStyle=m; g.fillRect(x,y,1,1);} } });
+}
+
+function render(s){
+  const text=(s.text||' ').toUpperCase();
+  let tw=0; for(const ch of text){ const cd=fontMap[ch]||fontMap[' ']; tw+=cd[0].length+1; } tw-=1;
+  const bv=s.bevel;
+  const bw=tw+s.pl+s.pr+(bv>0?bv:0);
+  const bh=5+s.pt+s.pb+(bv>0?bv:0);
+  const hasIcon = s.icon && s.icon!=='none' && ICONS[s.icon];
+  const iconW=hasIcon?7:0, gap=hasIcon?2:0;
+  const W=iconW+gap+bw, H=Math.max(bh,hasIcon?7:0);
+  const c=document.createElement('canvas'); c.width=W; c.height=H;
+  const ctx=c.getContext('2d');
+  const ox=iconW+gap, oy=Math.floor((H-bh)/2);
+
+  if(hasIcon){ const t=document.createElement('canvas'); paintIcon(t,s.icon,s.a); ctx.drawImage(t,0,Math.floor((H-7)/2)); }
+
+  const A=hexToRgb(s.a), B=hexToRgb(s.b);
+  const light=mix(A,WHITE,.4), dark=mix(B,BLACK,.45);
+  const n = s.dir==='top-bottom'?bh:bw;
+  for(let i=0;i<n;i++){
+    ctx.fillStyle=css(mix(A,B,i/Math.max(1,n-1)));
+    if(s.dir==='top-bottom') ctx.fillRect(ox,oy+i,bw,1); else ctx.fillRect(ox+i,oy,1,bh);
+  }
+  if(bv>0){
+    ctx.fillStyle=css(light); ctx.fillRect(ox,oy,bw,1); ctx.fillRect(ox,oy,1,bh);
+    ctx.fillStyle=css(dark);  ctx.fillRect(ox+bw-bv,oy+1,bv,bh-1); ctx.fillRect(ox+1,oy+bh-bv,bw-1,bv);
+  }
+  if(s.corners){
+    ctx.clearRect(ox,oy,1,1); ctx.clearRect(ox+bw-1,oy,1,1);
+    ctx.clearRect(ox,oy+bh-1,1,1); ctx.clearRect(ox+bw-1,oy+bh-1,1,1);
+  }
+  const sx=ox+s.pl, sy=oy+s.pt+(bv>0?1:0);
+  function layer(dx,dy,color){
+    ctx.fillStyle=color; let cx=sx;
+    for(const ch of text){
+      const cd=fontMap[ch]||fontMap[' '];
+      for(let y=0;y<5;y++) for(let x=0;x<cd[y].length;x++) if(cd[y][x]==='1') ctx.fillRect(cx+x+dx,sy+y+dy,1,1);
+      cx+=cd[0].length+1;
+    }
+  }
+  layer(1,1,s.sc); layer(0,0,s.tc);
+  return c;
+}
+
+const canvas=$('badge-canvas'), cctx=canvas.getContext('2d');
+function refresh(){
+  const s=getState();
+  const r=render(s);
+  canvas.width=r.width; canvas.height=r.height; cctx.clearRect(0,0,r.width,r.height); cctx.drawImage(r,0,0);
+  $('size-info').textContent=`${r.width} × ${r.height} px`;
+  fitPreview(); renderChat(r); updatePaths();
+}
+function fitPreview(){
+  const area=$('stage-view');
+  const s=Math.max(1,Math.min(14,Math.floor((area.clientWidth-60)/canvas.width)));
+  canvas.style.width=(canvas.width*s)+'px'; canvas.style.height=(canvas.height*s)+'px';
+}
+window.addEventListener('resize',fitPreview);
+
+const NAMES=['Steve','Alex','Herobrine','Notch','Dinnerbone','Jeb_'];
+const MSGS=['hello waffles!','who wants syrup?','gg','nice build','anyone selling?','/spawn'];
+function renderChat(r){
+  const chat=$('chat'); chat.innerHTML='';
+  const rows=[{c:r,n:'Steve',m:MSGS[0]}];
+  pack.slice(-4).reverse().forEach((p,i)=>rows.push({c:render(p),n:NAMES[i+1],m:MSGS[i+1]}));
+  rows.reverse().forEach(row=>{
+    const d=document.createElement('div'); d.className='chat-line';
+    const im=new Image(); im.src=row.c.toDataURL(); im.style.height=(row.c.height*2)+'px'; im.style.width=(row.c.width*2)+'px';
+    d.appendChild(im);
+    const nm=document.createElement('span'); nm.className='nm'; nm.textContent=row.n+':';
+    const ms=document.createElement('span'); ms.className='msg'; ms.textContent=row.m;
+    d.append(nm,ms); chat.appendChild(d);
+  });
+}
+
+// ---------- UI wiring ----------
+function setDir(d,silent){
+  gradDir=d;
+  $('dir-tb').classList.toggle('active',d==='top-bottom'); $('dir-lr').classList.toggle('active',d==='left-right');
+  if(!silent) refresh();
+}
+function syncColorUI(){
+  [['bg-top','dot-top-bg','hex-top'],['bg-bottom','dot-bot-bg','hex-bot'],['text-color','dot-txt-bg','hex-txt'],['shadow-color','dot-shd-bg','hex-shd']].forEach(([i,d,h])=>{
+    const v=$(i).value; $(d).style.background=v; $(h).textContent=v.toUpperCase();
+  });
+  const b=$('base-color').value; $('base-bg').style.background=b; $('base-hex').value=b.toUpperCase();
+  document.querySelectorAll('.sw').forEach(x=>x.classList.toggle('active',x.dataset.c.toLowerCase()===b.toLowerCase()));
+  buildIconGrid();
+}
+function applyBase(hex){
+  const d=derive(hex);
+  $('base-color').value=hex;
+  $('bg-top').value=d.a; $('bg-bottom').value=d.b; $('shadow-color').value=d.sc; $('text-color').value=d.tc;
+  document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
+  syncColorUI(); refresh();
+}
+function autoColors(){ applyBase($('base-color').value); }
+
+$('base-color').addEventListener('input',e=>applyBase(e.target.value));
+$('base-hex').addEventListener('input',e=>{ let v=e.target.value.trim(); if(v[0]!=='#') v='#'+v; if(validHex(v)) applyBase(v.toLowerCase()); });
+QUICK.forEach(c=>{ const d=document.createElement('div'); d.className='sw'; d.dataset.c=c; d.style.background=c; d.onclick=()=>applyBase(c); $('swatches').appendChild(d); });
+
+['bg-top','bg-bottom','text-color','shadow-color'].forEach(id=>$(id).addEventListener('input',()=>{ syncColorUI(); refresh(); }));
+$('text-input').addEventListener('input',refresh);
+$('corners').addEventListener('change',refresh);
+['pad-left','pad-right','pad-top','pad-bottom','bevel'].forEach(id=>{
+  const sl=$(id), v=$(id+'-val'); sl.addEventListener('input',()=>{ v.textContent=sl.value; refresh(); });
+});
+
+function buildIconGrid(){
+  const g=$('icon-grid'); const keep=g.scrollTop; g.innerHTML='';
+  ['none',...ICON_ORDER].forEach(name=>{
+    const b=document.createElement('button'); b.className='icon-btn'+(name===currentIcon?' active':''); b.title=name;
+    if(name==='none') b.innerHTML='<span class="none-x">✕</span>';
+    else { const c=document.createElement('canvas'); paintIcon(c,name,$('bg-top').value); b.appendChild(c); }
+    b.onclick=()=>{ currentIcon=name; buildIconGrid(); refresh(); };
+    g.appendChild(b);
+  });
+  g.scrollTop=keep;
+}
+
+// presets
+GROUPS.forEach(([title,list])=>{
+  const t=document.createElement('div'); t.className='chip-group-title'; t.textContent=title;
+  const chips=document.createElement('div'); chips.className='chips';
+  list.forEach(p=>{
+    const c=document.createElement('button'); c.className='chip'; c.textContent=p[0];
+    c.style.background=`linear-gradient(135deg,${p[1]},${p[2]})`;
+    c.onclick=()=>{
+      document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active')); c.classList.add('active');
+      setState(presetState(p,{}));
+    };
+    chips.appendChild(c);
+  });
+  $('presets-bar').append(t,chips);
+});
+function presetState(p,shape){
+  return Object.assign({},shape,{text:p[0],base:p[1],a:p[1],b:p[2],sc:p[3],tc:'#ffffff',icon:p[4],dir:p[5]||'top-bottom'});
+}
+
+// ---------- pack tray ----------
+let pack=[];
+const slug=t=>(t||'badge').toLowerCase().replace(/\+/g,'plus').replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'')||'badge';
+function savePack(){ try{ localStorage.setItem('waffles_pack_v1',JSON.stringify({pack,opts:getOpts()})); }catch(e){} }
+function loadPack(){
+  try{
+    const d=JSON.parse(localStorage.getItem('waffles_pack_v1')||'null'); if(!d) return;
+    pack=d.pack||[]; const o=d.opts||{};
+    if(o.ns!==undefined) $('o-ns').value=o.ns; if(o.folder!==undefined) $('o-folder').value=o.folder;
+    if(o.prefix!==undefined) $('o-prefix').value=o.prefix; if(o.file!==undefined) $('o-file').value=o.file;
+    $('o-height').value=o.height||''; $('o-ascent').value=o.ascent||''; $('o-chat').checked=!!o.chat;
+    if(o.fmt) selectFmt(o.fmt,true);
+  }catch(e){}
+}
+function addToPack(s){
+  const id=slug(s.text); const i=pack.findIndex(p=>slug(p.text)===id);
+  if(i>=0) pack[i]=s; else pack.push(s);
+}
+function renderTray(){
+  const t=$('tray'); t.innerHTML=''; $('count').textContent=pack.length; $('export-btn').disabled=!pack.length;
+  if(!pack.length){ t.innerHTML='<div class="tray-empty">Nothing here yet.<br>Make a badge and press <b>Add to pack</b>, or add every preset at once.</div>'; return; }
+  pack.forEach((s,i)=>{
+    const r=render(s);
+    const c=document.createElement('div'); c.className='tcard'; c.title='Click to edit';
+    const im=new Image(); im.src=r.toDataURL(); const sc=Math.max(1,Math.min(4,Math.floor(130/r.width)));
+    im.style.width=(r.width*sc)+'px'; im.style.height=(r.height*sc)+'px';
+    const id=document.createElement('div'); id.className='tid'; id.textContent=($('o-prefix').value||'')+slug(s.text);
+    const x=document.createElement('button'); x.className='x'; x.textContent='✕'; x.title='Remove';
+    x.onclick=e=>{ e.stopPropagation(); pack.splice(i,1); packChanged(); };
+    c.append(im,id,x); c.onclick=()=>setState(s); t.appendChild(c);
+  });
+}
+function packChanged(){ renderTray(); savePack(); refresh(); }
+
+$('add-btn').onclick=()=>{ const s=getState(); if(!$('text-input').value.trim()){ toast('Type some text first'); return; } addToPack(s); packChanged(); toast(`Added ${slug(s.text)}`); };
+$('add-all-btn').onclick=()=>{
+  const g=getState(); const shape={pl:g.pl,pr:g.pr,pt:g.pt,pb:g.pb,bevel:g.bevel,corners:g.corners};
+  let n=0; GROUPS.forEach(([,l])=>l.forEach(p=>{ addToPack(presetState(p,shape)); n++; }));
+  packChanged(); toast(`Added ${n} presets`);
+};
+$('clear-btn').onclick=()=>{ if(pack.length && confirm('Remove every badge from the pack?')){ pack=[]; packChanged(); } };
+
+$('download-btn').onclick=()=>{
+  const a=document.createElement('a'); a.download=slug($('text-input').value)+'.png'; a.href=canvas.toDataURL('image/png'); a.click();
+};
+
+// ---------- export ----------
+let fmt='nexo';
+function selectFmt(f,silent){
+  fmt=f; document.querySelectorAll('.fmt-btn').forEach(b=>b.classList.toggle('active',b.dataset.fmt===f));
+  if(!silent){ updatePaths(); savePack(); }
+}
+document.querySelectorAll('.fmt-btn').forEach(b=>b.onclick=()=>selectFmt(b.dataset.fmt));
+['o-ns','o-folder','o-prefix','o-file','o-height','o-ascent','o-chat'].forEach(id=>$(id).addEventListener('input',()=>{ renderTray(); updatePaths(); savePack(); }));
+
+function clean(v,re,fallback){ v=(v||'').toLowerCase().replace(re,''); return v||fallback; }
+function getOpts(){
+  return {
+    fmt,
+    ns: clean($('o-ns').value,/[^a-z0-9_.-]/g,'waffles'),
+    folder: clean($('o-folder').value,/[^a-z0-9_/-]/g,'ranks').replace(/^\/+|\/+$/g,''),
+    prefix: clean($('o-prefix').value,/[^a-z0-9_]/g,''),
+    file: clean($('o-file').value,/[^a-z0-9_-]/g,'waffles_ranks'),
+    height: parseInt($('o-height').value)||0, ascent: parseInt($('o-ascent').value)||0,
+    chat: $('o-chat').checked
+  };
+}
+function layout(o){
+  const f=o.folder;
+  if(fmt==='nexo') return {
+    cfg:`plugins/Nexo/glyphs/${o.file}.yml`,
+    tex:id=>`plugins/Nexo/pack/assets/${o.ns}/textures/${f}/${id}.png`
+  };
+  if(fmt==='oraxen') return {
+    cfg:`plugins/Oraxen/glyphs/${o.file}.yml`,
+    tex:id=>`plugins/Oraxen/pack/textures/${o.ns}/${f}/${id}.png`
+  };
+  return {
+    cfg:`plugins/ItemsAdder/contents/${o.ns}/configs/${o.file}.yml`,
+    tex:id=>`plugins/ItemsAdder/contents/${o.ns}/resourcepack/${o.ns}/textures/font/${f}/${id}.png`
+  };
+}
+function updatePaths(){
+  const o=getOpts(), L=layout(o), ex=(pack[0]?slug(pack[0].text):'owner');
+  $('path-preview').textContent = L.cfg+'\n'+L.tex(o.prefix+ex)+(pack.length>1?`\n… + ${pack.length-1} more`:'');
+  const use = fmt==='itemsadder' ? 'font_images' : 'glyphs';
+  $('export-hint').innerHTML=`Unzip into your server root — it merges into <b>plugins/</b>. Then reload ${fmt==='nexo'?'Nexo':fmt==='oraxen'?'Oraxen':'ItemsAdder'} (${use}).`;
+}
+
+function glyphYaml(o,entries){
+  const lines=[];
+  if(fmt==='itemsadder'){
+    lines.push('info:',`  namespace: ${o.ns}`,'font_images:');
+    entries.forEach(e=>{
+      lines.push(`  ${e.id}:`,`    path: "font/${o.folder}/${e.id}.png"`,`    scale_ratio: ${e.height}`,`    y_position: ${e.ascent}`,`    show_in_gui: true`);
+    });
+  } else {
+    entries.forEach(e=>{
+      lines.push(`${e.id}:`);
+      lines.push(fmt==='nexo' ? `  texture: ${o.ns}:${o.folder}/${e.id}` : `  texture: ${o.ns}/${o.folder}/${e.id}`);
+      lines.push(`  ascent: ${e.ascent}`,`  height: ${e.height}`);
+      if(o.chat){
+        if(fmt==='nexo') lines.push('  placeholders:',`    - ":${e.id}:"`);
+        else lines.push('  chat:','    placeholders:',`      - ":${e.id}:"`);
+      }
+    });
+  }
+  return lines.join('\n')+'\n';
+}
+function readme(o,entries){
+  const ex=entries[0].id, name=fmt==='nexo'?'Nexo':fmt==='oraxen'?'Oraxen':'ItemsAdder';
+  let use;
+  if(fmt==='itemsadder') use=`Use your font images wherever ItemsAdder supports them (e.g. the %img_${o.ns}:${ex}% PlaceholderAPI placeholder).\nSyntax can differ between ItemsAdder versions - check the "Font images" page of the ItemsAdder wiki.`;
+  else use=`Use <glyph:${ex}> anywhere MiniMessage tags are supported - for example a LuckPerms prefix:\n  /lp group admin meta setprefix 100 "<glyph:${ex}> "`;
+  return `WAFFLES RANK MAKER - ${name} pack
+${entries.length} badge(s)
+
+INSTALL
+1. Unzip this into your server's root folder (the "plugins" folder merges with yours).
+2. Reload ${name} (or restart) so it regenerates the resource pack.
+
+USAGE
+${use}
+${o.chat?'\nPlayers CAN type :id: placeholders in chat. Turn that off if you do not want fake ranks.\n':''}
+IDs: ${entries.map(e=>e.id).join(', ')}
+`;
+}
+
+// ---- minimal ZIP writer (stored, no compression) ----
+const CRC_T=(()=>{ const t=new Uint32Array(256); for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c=c&1?0xEDB88320^(c>>>1):c>>>1; t[n]=c>>>0; } return t; })();
+function crc32(u8){ let c=0xFFFFFFFF; for(let i=0;i<u8.length;i++) c=CRC_T[(c^u8[i])&255]^(c>>>8); return (c^0xFFFFFFFF)>>>0; }
+function makeZip(files){
+  const enc=new TextEncoder(), parts=[], cen=[]; let off=0;
+  const d=new Date(), dt=((d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1))&0xFFFF,
+        dd=(((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate())&0xFFFF;
+  files.forEach(f=>{
+    const nm=enc.encode(f.name), crc=crc32(f.data), sz=f.data.length;
+    const lh=new DataView(new ArrayBuffer(30));
+    lh.setUint32(0,0x04034b50,true); lh.setUint16(4,20,true); lh.setUint16(6,0x0800,true); lh.setUint16(8,0,true);
+    lh.setUint16(10,dt,true); lh.setUint16(12,dd,true); lh.setUint32(14,crc,true); lh.setUint32(18,sz,true); lh.setUint32(22,sz,true);
+    lh.setUint16(26,nm.length,true); lh.setUint16(28,0,true);
+    parts.push(new Uint8Array(lh.buffer),nm,f.data);
+    const ch=new DataView(new ArrayBuffer(46));
+    ch.setUint32(0,0x02014b50,true); ch.setUint16(4,20,true); ch.setUint16(6,20,true); ch.setUint16(8,0x0800,true); ch.setUint16(10,0,true);
+    ch.setUint16(12,dt,true); ch.setUint16(14,dd,true); ch.setUint32(16,crc,true); ch.setUint32(20,sz,true); ch.setUint32(24,sz,true);
+    ch.setUint16(28,nm.length,true); ch.setUint32(42,off,true);
+    cen.push(new Uint8Array(ch.buffer),nm);
+    off+=30+nm.length+sz;
+  });
+  let cs=0; cen.forEach(p=>cs+=p.length);
+  const end=new DataView(new ArrayBuffer(22));
+  end.setUint32(0,0x06054b50,true); end.setUint16(8,files.length,true); end.setUint16(10,files.length,true);
+  end.setUint32(12,cs,true); end.setUint32(16,off,true);
+  return new Blob([...parts,...cen,new Uint8Array(end.buffer)],{type:'application/zip'});
+}
+
+$('export-btn').onclick=async()=>{
+  if(!pack.length) return;
+  const o=getOpts(), L=layout(o), files=[], entries=[], seen=new Set();
+  for(const s of pack){
+    let id=o.prefix+slug(s.text), n=2; while(seen.has(id)) id=o.prefix+slug(s.text)+'_'+(n++); seen.add(id);
+    const c=render(s);
+    const blob=await new Promise(r=>c.toBlob(r,'image/png'));
+    const data=new Uint8Array(await blob.arrayBuffer());
+    const height=o.height||c.height, ascent=Math.min(o.ascent||Math.max(0,c.height-2),height);
+    entries.push({id,height,ascent});
+    files.push({name:L.tex(id),data});
+  }
+  const enc=new TextEncoder();
+  files.unshift({name:L.cfg,data:enc.encode(glyphYaml(o,entries))});
+  files.push({name:'README.txt',data:enc.encode(readme(o,entries))});
+  const url=URL.createObjectURL(makeZip(files));
+  const a=document.createElement('a'); a.href=url; a.download=`waffles_ranks_${fmt}.zip`; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),4000);
+  toast(`Exported ${entries.length} badges for ${fmt}`);
+};
+
+// ---------- init ----------
+(function drawLogo(){
+  const c=$('logo'); const g=c.getContext('2d'); const map={a:'#f2b84b',b:'#a8681a',c:'#ffe3a3'};
+  ICONS.waffle.forEach((row,y)=>{ for(let x=0;x<7;x++){ const m=map[row[x]]; if(m){ g.fillStyle=m; g.fillRect(x,y,1,1);} } });
+})();
+loadPack();
+applyBase('#d8303f');
+setState(Object.assign(presetState(STAFF[0],{}),{pl:3,pr:3,pt:2,pb:2,bevel:1,corners:true}));
+document.querySelector('.chip').classList.add('active');
+renderTray(); refresh();
+</script>
+</body>
+</html>
